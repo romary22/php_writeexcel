@@ -2,12 +2,11 @@
 
 set_time_limit(300);
 
-require_once('../class.writeexcel_workbookbig.inc.php');
-require_once('../class.writeexcel_worksheet.inc.php');
+require_once __DIR__ . '/../vendor/autoload.php';
 
-$fname = tempnam(sys_get_temp_dir(), "bigfile.xls");
+$fname = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'bigfile-' . bin2hex(random_bytes(16)) . '.xls';
 $workbook = new writeexcel_workbookbig($fname);
-$worksheet = &$workbook->addworksheet();
+$worksheet = $workbook->addworksheet();
 
 $worksheet->set_column(0, 50, 18);
 
@@ -19,8 +18,10 @@ for ($col=0;$col<50;$col++) {
 
 $workbook->close();
 
-header("Content-Type: application/x-msexcel; name=\"example-bigfile.xls\"");
-header("Content-Disposition: inline; filename=\"example-bigfile.xls\"");
-$fh=fopen($fname, "rb");
-fpassthru($fh);
-unlink($fname);
+if (PHP_SAPI !== 'cli') {
+    header("Content-Type: application/x-msexcel; name=\"example-bigfile.xls\"");
+    header("Content-Disposition: inline; filename=\"example-bigfile.xls\"");
+    $fh=fopen($fname, "rb");
+    fpassthru($fh);
+}
+#unlink($fname);

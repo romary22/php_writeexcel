@@ -1359,6 +1359,7 @@ class writeexcel_formula
      */
     public function _func()
     {
+        $result = '';
         $num_args = 0; // number of arguments received
         $function = $this->_current_token;
         $this->_advance();

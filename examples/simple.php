@@ -2,10 +2,9 @@
 
 set_time_limit(10);
 
-require_once('../class.writeexcel_workbook.inc.php');
-require_once('../class.writeexcel_worksheet.inc.php');
+require_once __DIR__ . '/../vendor/autoload.php';
 
-$fname = tempnam(sys_get_temp_dir(), "simple.xls");
+$fname = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'simple-' . bin2hex(random_bytes(16)) . '.xls';
 $workbook = new writeexcel_workbook($fname);
 $worksheet = &$workbook->addworksheet();
 
@@ -27,12 +26,14 @@ $worksheet->write(7, 0,  '=A3 + A6');
 $worksheet->write(8, 0,  '=IF(A5>3,"Yes", "No")');
 
 # Write a hyperlink
-$worksheet->write(10, 0, 'http://www.php.net/');
+$worksheet->write(10, 0, 'https://www.php.net/');
 
 $workbook->close();
 
-header("Content-Type: application/x-msexcel; name=\"example-simple.xls\"");
-header("Content-Disposition: inline; filename=\"example-simple.xls\"");
-$fh=fopen($fname, "rb");
-fpassthru($fh);
-unlink($fname);
+if (PHP_SAPI !== 'cli') {
+	header("Content-Type: application/x-msexcel; name=\"example-simple.xls\"");
+	header("Content-Disposition: inline; filename=\"example-simple.xls\"");
+	$fh=fopen($fname, "rb");
+	fpassthru($fh);
+}
+#unlink($fname);

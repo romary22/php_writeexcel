@@ -2,10 +2,9 @@
 
 set_time_limit(10);
 
-require_once('../class.writeexcel_workbook.inc.php');
-require_once('../class.writeexcel_worksheet.inc.php');
+require_once __DIR__ . '/../vendor/autoload.php';
 
-$fname = tempnam(sys_get_temp_dir(), "demo.xls");
+$fname = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'demo-' . bin2hex(random_bytes(16)) . '.xls';
 $workbook = new writeexcel_workbook($fname);
 $worksheet =& $workbook->addworksheet('Demo');
 $worksheet2 =& $workbook->addworksheet('Another sheet');
@@ -70,14 +69,14 @@ $worksheet->write('B7', '=SIN(PI()/4)');
 # Hyperlinks
 #
 $worksheet->write('A8', "Hyperlinks");
-$worksheet->write('B8',  'http://www.php.net/');
+$worksheet->write('B8',  'https://www.php.net/');
 
 #######################################################################
 #
 # Images
 #
 $worksheet->write('A9', "Images");
-$worksheet->insert_bitmap('B9', 'php.bmp', 16, 8);
+$worksheet->insert_bitmap('B9', __DIR__ . '/../doc/php.bmp', 16, 8);
 
 #######################################################################
 #
@@ -88,8 +87,10 @@ $worksheet->write('A18', "Multiple worksheets");
 
 $workbook->close();
 
-header("Content-Type: application/x-msexcel; name=\"example-demo.xls\"");
-header("Content-Disposition: inline; filename=\"example-demo.xls\"");
-$fh=fopen($fname, "rb");
-fpassthru($fh);
-unlink($fname);
+if (PHP_SAPI !== 'cli') {
+    header("Content-Type: application/x-msexcel; name=\"example-demo.xls\"");
+    header("Content-Disposition: inline; filename=\"example-demo.xls\"");
+    $fh=fopen($fname, "rb");
+    fpassthru($fh);
+}
+#unlink($fname);

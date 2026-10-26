@@ -2,10 +2,9 @@
 
 set_time_limit(10);
 
-require_once('../class.writeexcel_workbook.inc.php');
-require_once('../class.writeexcel_worksheet.inc.php');
+require_once __DIR__ . '/../vendor/autoload.php';
 
-$fname = tempnam(sys_get_temp_dir(), "merge2.xls");
+$fname = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'merge2-' . bin2hex(random_bytes(16)) . '.xls';
 $workbook = new writeexcel_workbook($fname);
 $worksheet = &$workbook->addworksheet();
 
@@ -51,8 +50,10 @@ $worksheet->write_blank(2, 2,                 $border2);
 
 $workbook->close();
 
-header("Content-Type: application/x-msexcel; name=\"example-merge2.xls\"");
-header("Content-Disposition: inline; filename=\"example-merge2.xls\"");
-$fh=fopen($fname, "rb");
-fpassthru($fh);
-unlink($fname);
+if (PHP_SAPI !== 'cli') {
+	header("Content-Type: application/x-msexcel; name=\"example-merge2.xls\"");
+	header("Content-Disposition: inline; filename=\"example-merge2.xls\"");
+	$fh=fopen($fname, "rb");
+	fpassthru($fh);
+}
+#unlink($fname);

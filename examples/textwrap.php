@@ -1,9 +1,8 @@
 <?php
 
-require_once('../class.writeexcel_workbook.inc.php');
-require_once('../class.writeexcel_worksheet.inc.php');
+require_once __DIR__ . '/../vendor/autoload.php';
 
-$fname = tempnam(sys_get_temp_dir(), "textwrap.xls");
+$fname = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'textwrap-' . bin2hex(random_bytes(16)) . '.xls';
 $workbook = new writeexcel_workbook($fname);
 $worksheet = &$workbook->addworksheet();
 
@@ -63,8 +62,10 @@ $worksheet->write(5, 3, $str2, $format2);
 
 $workbook->close();
 
-header("Content-Type: application/x-msexcel; name=\"example-textwrap.xls\"");
-header("Content-Disposition: inline; filename=\"example-textwrap.xls\"");
-$fh=fopen($fname, "rb");
-fpassthru($fh);
-unlink($fname);
+if (PHP_SAPI !== 'cli') {
+	header("Content-Type: application/x-msexcel; name=\"example-textwrap.xls\"");
+	header("Content-Disposition: inline; filename=\"example-textwrap.xls\"");
+	$fh=fopen($fname, "rb");
+	fpassthru($fh);
+}
+#unlink($fname);

@@ -2,10 +2,9 @@
 
 set_time_limit(10);
 
-require_once('../class.writeexcel_workbook.inc.php');
-require_once('../class.writeexcel_worksheet.inc.php');
+require_once __DIR__ . '/../vendor/autoload.php';
 
-$fname = tempnam(sys_get_temp_dir(), "stocks.xls");
+$fname = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'stocks-' . bin2hex(random_bytes(16)) . '.xls';
 $workbook = new writeexcel_workbook($fname);
 $worksheet =& $workbook->addworksheet();
 
@@ -62,8 +61,10 @@ $worksheet->write(3, 3, 0,         $f_change); # 0 in the font color (black)
 
 $workbook->close();
 
-header("Content-Type: application/x-msexcel; name=\"example-stocks.xls\"");
-header("Content-Disposition: inline; filename=\"example-stocks.xls\"");
-$fh=fopen($fname, "rb");
-fpassthru($fh);
-unlink($fname);
+if (PHP_SAPI !== 'cli') {
+	header("Content-Type: application/x-msexcel; name=\"example-stocks.xls\"");
+	header("Content-Disposition: inline; filename=\"example-stocks.xls\"");
+	$fh=fopen($fname, "rb");
+	fpassthru($fh);
+}
+#unlink($fname);

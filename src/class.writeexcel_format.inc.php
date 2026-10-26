@@ -652,6 +652,10 @@ class writeexcel_format
         $this->_font_charset = $font_charset;
     }
 
+    public function get_num_format()
+    {
+        return $this->_num_format;
+    }
     public function set_num_format($num_format = 1)
     {
         $this->_num_format = $num_format;
@@ -745,5 +749,10 @@ class writeexcel_format
     public function set_right_color($color)
     {
         $this->_right_color = $this->_get_color($color);
+    }
+
+    public function set_font_index($font_index)
+    {
+        $this->_font_index = $font_index;
     }
 }

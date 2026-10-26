@@ -669,11 +669,11 @@ class writeexcel_workbook extends writeexcel_biffwriter
 
             if (isset($fonts[$key])) {
                 # FONT has already been used
-                $format->_font_index = $fonts[$key];
+                $format->set_font_index($fonts[$key]);
             } else {
                 # Add a new FONT record
                 $fonts[$key]         = $index;
-                $format->_font_index = $index;
+                $format->set_font_index($index);
                 ++$index;
                 $font = $format->get_font();
                 $this->_append($font);
@@ -700,7 +700,7 @@ class writeexcel_workbook extends writeexcel_biffwriter
         for ($c = 0; $c < sizeof($this->_formats); ++$c) {
             $format = &$this->_formats[$c];
 
-            $num_format = $format->_num_format;
+            $num_format = $format->get_num_format();
 
             # Check if $num_format is an index to a built-in format.
             # Also check for a string of zeros, which is a valid format string
@@ -713,22 +713,21 @@ class writeexcel_workbook extends writeexcel_biffwriter
                 }
             }
 
-            if (isset($num_formats[$num_format])) {
+            if (isset($num_formats_list[$num_format])) {
                 # FORMAT has already been used
-                $format->_num_format = $num_formats[$num_format];
+                $format->set_num_format($num_formats_list[$num_format]);
             } else {
                 # Add a new FORMAT
-                $num_formats[$num_format] = $index;
-                $format->_num_format      = $index;
-                array_push($num_formats_list, $num_format);
+                $num_formats_list[$num_format] = $index;
+                $format->set_num_format($index);
                 ++$index;
             }
         }
 
         # Write the new FORMAT records starting from 0xA4
         $index = 164;
-        foreach ($num_formats_list as $num_format) {
-            $this->_store_num_format($num_format, $index);
+        foreach ($num_formats_list as $num_format => $idx) {
+            $this->_store_num_format($num_format, $idx);
             ++$index;
         }
     }

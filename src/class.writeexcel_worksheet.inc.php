@@ -109,7 +109,7 @@ class writeexcel_worksheet extends writeexcel_biffwriter
         $this->_firstsheet  = &$firstsheet;
         $this->_url_format  = &$url_format;
         $this->_parser      = &$parser;
-        $this->_tempdir     = $tempdir;
+        $this->_tempdir     = is_null($tempdir) ? sys_get_temp_dir() : $tempdir;
 
         $this->_ext_sheets    = array();
         $this->_using_tmpfile = 1;
@@ -330,7 +330,7 @@ class writeexcel_worksheet extends writeexcel_biffwriter
                 fseek($this->_filehandle, 0, SEEK_SET);
             }
 
-            if ($this->_debug) {
+            if ($this->_debug && is_string($tmp)) {
                 echo '*** worksheet::get_data() called (1):';
                 for ($c = 0; $c < strlen($tmp); ++$c) {
                     if ($c % 16 == 0) {
@@ -1921,13 +1921,20 @@ class writeexcel_worksheet extends writeexcel_biffwriter
      */
     public function _store_dimensions()
     {
-        $record   = 0x0000;            // Record identifier
+        $record   = 0x0200;            // Record identifier
         $length   = 0x000A;            // Number of bytes to follow
         $row_min  = $this->_dim_rowmin;    // First row
         $row_max  = $this->_dim_rowmax;    // Last row plus 1
         $col_min  = $this->_dim_colmin;    // First column
         $col_max  = $this->_dim_colmax;    // Last column plus 1
         $reserved = 0x0000;            // Reserved by Excel
+
+        if ($row_min > $row_max || $col_min > $col_max) {
+            $row_min = 0;
+            $row_max = 0;
+            $col_min = 0;
+            $col_max = 0;
+        }
 
         $header = pack('vv', $record, $length);
         $data   = pack('vvvvv', $row_min, $row_max, $col_min, $col_max, $reserved);
@@ -2630,10 +2637,10 @@ class writeexcel_worksheet extends writeexcel_biffwriter
         $row     = $_[0];
         $col     = $_[1];
         $bitmap  = $_[2];
-        $x       = $_[3] ? $_[3] : 0;
-        $y       = $_[4] ? $_[4] : 0;
-        $scale_x = $_[5] ? $_[5] : 1;
-        $scale_y = $_[6] ? $_[6] : 1;
+        $x       = $_[3] ?? 0;
+        $y       = $_[4] ?? 0;
+        $scale_x = isset($_[5]) && $_[5] ? $_[5] : 1;
+        $scale_y = isset($_[6]) && $_[6] ? $_[6] : 1;
 
         list($width, $height, $size, $data) = $this->_process_bitmap($bitmap);
 
@@ -2899,20 +2906,20 @@ class writeexcel_worksheet extends writeexcel_biffwriter
         // Open file and binmode the data in case the platform needs it.
         $bmp = fopen($bitmap, 'rb');
         if (!$bmp) {
-            trigger_error("Could not open file '$bitmap'.", E_USER_ERROR);
+            throw new RuntimeException("Could not open file '$bitmap'.");
         }
 
         $data = fread($bmp, filesize($bitmap));
 
         // Check that the file is big enough to be a bitmap.
         if (strlen($data) <= 0x36) {
-            trigger_error("$bitmap doesn't contain enough data.", E_USER_ERROR);
+            throw new RuntimeException("$bitmap doesn't contain enough data.");
         }
 
         // The first 2 bytes are used to identify the bitmap.
         if (substr($data, 0, 2) != 'BM') {
-            trigger_error("$bitmap doesn't appear to to be a ".
-                          'valid bitmap image.', E_USER_ERROR);
+            throw new RuntimeException("$bitmap doesn't appear to to be a ".
+                                       'valid bitmap image.');
         }
 
         // Remove bitmap data: ID.
@@ -2935,11 +2942,11 @@ class writeexcel_worksheet extends writeexcel_biffwriter
         $height = $array['height'];
 
         if ($width > 0xFFFF) {
-            trigger_error("$bitmap: largest image width supported is 64k.", E_USER_ERROR);
+            throw new RuntimeException("$bitmap: largest image width supported is 64k.");
         }
 
         if ($height > 0xFFFF) {
-            trigger_error("$bitmap: largest image height supported is 64k.", E_USER_ERROR);
+            throw new RuntimeException("$bitmap: largest image height supported is 64k.");
         }
 
         // Read and remove the bitmap planes and bpp data. Verify them.
@@ -2949,11 +2956,11 @@ class writeexcel_worksheet extends writeexcel_biffwriter
         $bitcount = $array['bitcount'];
 
         if ($bitcount != 24) {
-            trigger_error("$bitmap isn't a 24bit true color bitmap.", E_USER_ERROR);
+            throw new RuntimeException("$bitmap isn't a 24bit true color bitmap.");
         }
 
         if ($planes != 1) {
-            trigger_error("$bitmap: only 1 plane supported in bitmap image.", E_USER_ERROR);
+            throw new RuntimeException("$bitmap: only 1 plane supported in bitmap image.");
         }
 
         // Read and remove the bitmap compression. Verify compression.
@@ -2962,7 +2969,7 @@ class writeexcel_worksheet extends writeexcel_biffwriter
         $compression = $array['compression'];
 
         if ($compression != 0) {
-            trigger_error("$bitmap: compression not supported in bitmap image.", E_USER_ERROR);
+            throw new RuntimeException("$bitmap: compression not supported in bitmap image.");
         }
 
         // Remove bitmap data: data size, hres, vres, colours, imp. colours.

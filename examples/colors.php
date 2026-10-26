@@ -9,10 +9,9 @@
 
 set_time_limit(10);
 
-require_once('../class.writeexcel_workbook.inc.php');
-require_once('../class.writeexcel_worksheet.inc.php');
+require_once __DIR__ . '/../vendor/autoload.php';
 
-$fname = tempnam(sys_get_temp_dir(), "colors.xls");
+$fname = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'colors-' . bin2hex(random_bytes(16)) . '.xls';
 $workbook = new writeexcel_workbook($fname);
 
 # Some common formats
@@ -45,7 +44,7 @@ $colors = array(
                 'yellow'=>0x0D
                );
 
-$worksheet1 =& $workbook->addworksheet('Named colors');
+$worksheet1 = $workbook->addworksheet('Named colors');
 
 $worksheet1->set_column(0, 3, 15);
 
@@ -106,8 +105,10 @@ for ($i=8;$i<=63;$i++) {
 
 $workbook->close();
 
-header("Content-Type: application/x-msexcel; name=\"example-colors.xls\"");
-header("Content-Disposition: inline; filename=\"example-colors.xls\"");
-$fh=fopen($fname, "rb");
-fpassthru($fh);
-unlink($fname);
+if (PHP_SAPI !== 'cli') {
+    header("Content-Type: application/x-msexcel; name=\"example-colors.xls\"");
+    header("Content-Disposition: inline; filename=\"example-colors.xls\"");
+    $fh=fopen($fname, "rb");
+    fpassthru($fh);
+}
+#unlink($fname);

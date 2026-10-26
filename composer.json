@@ -8,6 +8,10 @@
         {
             "type": "vcs",
             "url": "https://github.com/romary22/php_writeexcel.git"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/romary22/php_ole.git"
         }
     ],
     "license": "LGPL v2.1",
@@ -20,7 +24,8 @@
         }
     ],
     "require": {
-        "php": ">=8.3.0"
+        "php": ">=8.3.0",
+        "romary22/php_ole": "dev-master"
     },
     "autoload": {
         "psr-0": { },
