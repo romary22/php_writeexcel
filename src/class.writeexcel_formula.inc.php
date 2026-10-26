@@ -46,53 +46,45 @@
  * This is the Spreadsheet::WriteExcel Perl package ported to PHP
  * Spreadsheet::WriteExcel was written by John McNamara, jmcnamara@cpan.org.
  */
-if (!defined('SPREADSHEET_EXCEL_WRITER_ADD')) {
-    define('SPREADSHEET_EXCEL_WRITER_ADD', '+');
-}
-if (!defined('SPREADSHEET_EXCEL_WRITER_SUB')) {
-    define('SPREADSHEET_EXCEL_WRITER_SUB', '-');
-}
-if (!defined('SPREADSHEET_EXCEL_WRITER_MUL')) {
-    define('SPREADSHEET_EXCEL_WRITER_MUL', '*');
-}
-if (!defined('SPREADSHEET_EXCEL_WRITER_DIV')) {
-    define('SPREADSHEET_EXCEL_WRITER_DIV', '/');
-}
-if (!defined('SPREADSHEET_EXCEL_WRITER_OPEN')) {
-    define('SPREADSHEET_EXCEL_WRITER_OPEN', '(');
-}
-if (!defined('SPREADSHEET_EXCEL_WRITER_CLOSE')) {
-    define('SPREADSHEET_EXCEL_WRITER_CLOSE', ')');
-}
-if (!defined('SPREADSHEET_EXCEL_WRITER_COMA')) {
-    define('SPREADSHEET_EXCEL_WRITER_COMA', ',');
-}
-if (!defined('SPREADSHEET_EXCEL_WRITER_SCOLON')) {
-    define('SPREADSHEET_EXCEL_WRITER_SCOLON', ';');
-}
-if (!defined('SPREADSHEET_EXCEL_WRITER_GT')) {
-    define('SPREADSHEET_EXCEL_WRITER_GT', '>');
-}
-if (!defined('SPREADSHEET_EXCEL_WRITER_LT')) {
-    define('SPREADSHEET_EXCEL_WRITER_LT', '<');
-}
-if (!defined('SPREADSHEET_EXCEL_WRITER_LE')) {
-    define('SPREADSHEET_EXCEL_WRITER_LE', '<=');
-}
-if (!defined('SPREADSHEET_EXCEL_WRITER_GE')) {
-    define('SPREADSHEET_EXCEL_WRITER_GE', '>=');
-}
-if (!defined('SPREADSHEET_EXCEL_WRITER_EQ')) {
-    define('SPREADSHEET_EXCEL_WRITER_EQ', '=');
-}
-if (!defined('SPREADSHEET_EXCEL_WRITER_NE')) {
-    define('SPREADSHEET_EXCEL_WRITER_NE', '<>');
-}
+require_once "FormulaException.php";
 
-define('COL_MAX_OLD', 256);
-define('ROW_MAX_OLD', 65536);
-define('COL_MAX_NEW', 16384);
-define('ROW_MAX_NEW', 1048576);
+if (!defined('SPREADSHEET_EXCEL_WRITER_ADD'))
+    define('SPREADSHEET_EXCEL_WRITER_ADD', '+');
+if (!defined('SPREADSHEET_EXCEL_WRITER_SUB'))
+    define('SPREADSHEET_EXCEL_WRITER_SUB', '-');
+if (!defined('SPREADSHEET_EXCEL_WRITER_MUL'))
+    define('SPREADSHEET_EXCEL_WRITER_MUL', '*');
+if (!defined('SPREADSHEET_EXCEL_WRITER_DIV'))
+    define('SPREADSHEET_EXCEL_WRITER_DIV', '/');
+if (!defined('SPREADSHEET_EXCEL_WRITER_OPEN'))
+    define('SPREADSHEET_EXCEL_WRITER_OPEN', '(');
+if (!defined('SPREADSHEET_EXCEL_WRITER_CLOSE'))
+    define('SPREADSHEET_EXCEL_WRITER_CLOSE', ')');
+if (!defined('SPREADSHEET_EXCEL_WRITER_COMA'))
+    define('SPREADSHEET_EXCEL_WRITER_COMA', ',');
+if (!defined('SPREADSHEET_EXCEL_WRITER_SCOLON'))
+    define('SPREADSHEET_EXCEL_WRITER_SCOLON', ';');
+if (!defined('SPREADSHEET_EXCEL_WRITER_GT'))
+    define('SPREADSHEET_EXCEL_WRITER_GT', '>');
+if (!defined('SPREADSHEET_EXCEL_WRITER_LT'))
+    define('SPREADSHEET_EXCEL_WRITER_LT', '<');
+if (!defined('SPREADSHEET_EXCEL_WRITER_LE'))
+    define('SPREADSHEET_EXCEL_WRITER_LE', '<=');
+if (!defined('SPREADSHEET_EXCEL_WRITER_GE'))
+    define('SPREADSHEET_EXCEL_WRITER_GE', '>=');
+if (!defined('SPREADSHEET_EXCEL_WRITER_EQ'))
+    define('SPREADSHEET_EXCEL_WRITER_EQ', '=');
+if (!defined('SPREADSHEET_EXCEL_WRITER_NE'))
+    define('SPREADSHEET_EXCEL_WRITER_NE', '<>');
+
+if (!defined('COL_MAX_OLD'))
+    define('COL_MAX_OLD', 256);
+if (!defined('ROW_MAX_OLD'))
+    define('ROW_MAX_OLD', 65536);
+if (!defined('COL_MAX_NEW'))
+    define('COL_MAX_NEW', 16384);
+if (!defined('ROW_MAX_NEW'))
+    define('ROW_MAX_NEW', 1048576);
 
 /**
  * Class for parsing Excel formulas.
@@ -595,7 +587,7 @@ class writeexcel_formula
             return '';
         }
         // TODO: use real error codes
-        trigger_error("Unknown token $token", E_USER_ERROR);
+        throw new FormulaException('Unknown token: '. $token, E_USER_ERROR);
     }
 
     /**
@@ -667,7 +659,7 @@ class writeexcel_formula
             list($cell1, $cell2) = explode('\.\.', $range);
         } else {
             // TODO: use real error codes
-            trigger_error('Unknown range separator', E_USER_ERROR);
+            throw new FormulaException('Unknown range separator', E_USER_ERROR);
         }
 
         // Convert the cell references
@@ -1302,7 +1294,7 @@ class writeexcel_formula
             $this->_advance();         // eat the "("
             $result = $this->_parenthesizedExpression();
             if ($this->_current_token != SPREADSHEET_EXCEL_WRITER_CLOSE) {
-                trigger_error("')' token expected.", E_USER_ERROR);
+                throw new FormulaException("')' token expected.",E_USER_ERROR);
             }
             $this->_advance();         // eat the ")"
             return $result;
@@ -1349,8 +1341,8 @@ class writeexcel_formula
 
             return $result;
         }
-        trigger_error('Sintactic error: '.$this->_current_token.', lookahead: '.
-                $this->_lookahead.', current char: '.$this->_current_char, E_USER_ERROR);
+        throw new FormulaException('Sintactic error: '.$this->_current_token.', lookahead: '.
+            $this->_lookahead.', current char: '.$this->_current_char, E_USER_ERROR);
     }
 
     /**
@@ -1370,8 +1362,8 @@ class writeexcel_formula
                         $this->_current_token == SPREADSHEET_EXCEL_WRITER_SCOLON) {
                     $this->_advance();  // eat the ","
                 } else {
-                    trigger_error('Sintactic error: coma expected in '.
-                            "function $function, {$num_args}� arg", E_USER_ERROR);
+                    throw new FormulaException('Sintactic error: coma expected in '.
+                            "function $function, {$num_args} arg", E_USER_ERROR);
                 }
                 $result2 = $this->_condition();
                 if ($this->isError($result2)) {
@@ -1390,7 +1382,7 @@ class writeexcel_formula
         $args = $this->_functions[$function][1];
         // If fixed number of args eg. TIME($i,$j,$k). Check that the number of args is valid.
         if (($args >= 0) and ($args != $num_args)) {
-            trigger_error("Incorrect number of arguments in function $function() ", E_USER_ERROR);
+            throw new FormulaException("Incorrect number of arguments in function $function() ",E_USER_ERROR);
         }
 
         $result = $this->_createTree($function, $result, $num_args);
