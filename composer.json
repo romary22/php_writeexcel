@@ -21,6 +21,10 @@
             "email": "jonny@1409.org",
             "homepage": "http://www.bettina-attack.de/jonny/view.php/projects/php_writeexcel/",
             "role": "Developer"
+        },
+        {
+            "name": "Romary Oswalt",
+            "role": "Developer"
         }
     ],
     "require": {
