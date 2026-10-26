@@ -13,7 +13,7 @@ require_once('../class.writeexcel_workbook.inc.php');
 require_once('../class.writeexcel_worksheet.inc.php');
 
 $fname = tempnam(sys_get_temp_dir(), "colors.xls");
-$workbook = &new writeexcel_workbook($fname);
+$workbook = new writeexcel_workbook($fname);
 
 # Some common formats
 $center  =& $workbook->addformat(array('align' => 'center'));

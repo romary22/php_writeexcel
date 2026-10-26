@@ -12,7 +12,7 @@ require_once('../class.writeexcel_workbook.inc.php');
 require_once('../class.writeexcel_worksheet.inc.php');
 
 $fname = tempnam(sys_get_temp_dir(), "panes.xls");
-$workbook = &new writeexcel_workbook($fname);
+$workbook = new writeexcel_workbook($fname);
 
 $worksheet1 =& $workbook->addworksheet('Panes 1');
 $worksheet2 =& $workbook->addworksheet('Panes 2');

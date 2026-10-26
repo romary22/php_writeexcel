@@ -6,7 +6,7 @@ require_once('../class.writeexcel_workbook.inc.php');
 require_once('../class.writeexcel_worksheet.inc.php');
 
 $fname = tempnam(sys_get_temp_dir(), "stocks.xls");
-$workbook = &new writeexcel_workbook($fname);
+$workbook = new writeexcel_workbook($fname);
 $worksheet =& $workbook->addworksheet();
 
 # Set the column width for columns 1, 2, 3 and 4

@@ -68,9 +68,9 @@ class writeexcel_worksheet extends writeexcel_biffwriter
     public $_title_colmin;
     public $_title_colmax;
     public $_print_rowmin;
-    protected $_print_rowmax;
-    protected $_print_colmin;
-    protected $_print_colmax;
+    public $_print_rowmax;
+    public $_print_colmin;
+    public $_print_colmax;
     protected $_print_gridlines;
     protected $_screen_gridlines;
     protected $_print_headers;
@@ -1590,7 +1590,7 @@ class writeexcel_worksheet extends writeexcel_biffwriter
         }
         $xf = @$_[6] ? $_[6] : $this->_url_format;  # The cell format
         # Strip URL type
-        $url = preg_replace('s[^internal:]', '', $url);
+        $url = preg_replace('/^internal:/', '', $url);
 
         # Write the visible label
         if (!isset($str)) {
@@ -1613,7 +1613,7 @@ class writeexcel_worksheet extends writeexcel_biffwriter
         $url = $url."\0\0\0";
 
         # Pack the length of the URL as chars (not wchars)
-        $url_len = pack('V', int(strlen($url) / 2));
+        $url_len = pack('V', intVal(strlen($url) / 2));
 
         # Calculate the data length
         $length = 0x24 + strlen($url);
@@ -1687,11 +1687,11 @@ class writeexcel_worksheet extends writeexcel_biffwriter
         #
         $absolute = 0x02; # Bit mask
 
-        if (!preg_match('[\\]', $url)) {
+        if (!preg_match('[\\\\]', $url)) {
             $absolute = 0x00;
         }
 
-        if (preg_match('[^\.\.\\]', $url)) {
+        if (preg_match('[^\.\.\\\\]', $url)) {
             $absolute = 0x00;
         }
 
@@ -1705,8 +1705,8 @@ class writeexcel_worksheet extends writeexcel_biffwriter
         //!!!
         if (isset($sheet)) {
             $link_type |= 0x08;
-            $sheet_len = pack('V', length($sheet) + 0x01);
-            $sheet     = implode("\0", split('', $sheet));
+            $sheet_len = pack('V', strlen($sheet) + 0x01);
+            $sheet     = implode("\0", str_split($sheet));
             $sheet .= "\0\0\0";
         } else {
             $sheet_len = '';
@@ -1717,6 +1717,7 @@ class writeexcel_worksheet extends writeexcel_biffwriter
         $link_type = pack('V', $link_type);
 
         # Calculate the up-level dir count e.g.. (..\..\..\ == 3)
+        $up_count	= '';
         /* TODO
           $up_count	= 0;
           $up_count++	while $dir_long =~ s[^\.\.\\][];
@@ -1726,7 +1727,7 @@ class writeexcel_worksheet extends writeexcel_biffwriter
         $dir_short = $dir_long."\0";
 
         # Store the long dir name as a wchar string (non-null terminated)
-        $dir_long = implode("\0", preg_split('', $dir_long, -1, PREG_SPLIT_NO_EMPTY));
+        $dir_long = implode("\0", preg_split('//', $dir_long, -1, PREG_SPLIT_NO_EMPTY));
         $dir_long = $dir_long."\0";
 
         # Pack the lengths of the dir strings
@@ -1792,8 +1793,8 @@ class writeexcel_worksheet extends writeexcel_biffwriter
         $xf = $_[6] ? $_[6] : $this->_url_format;  # The cell format
         # Strip URL type and change Unix dir separator to Dos style (if needed)
         #
-        $url   = preg_replace('[^external:]', '', $url);
-        $url = preg_replace('[/]', '\\');
+        $url = preg_replace('[^external:]', '', $url);
+        $url = preg_replace('[/]', '\\', $url);
 
         # Write the visible label
         if (!isset($str)) {
@@ -1809,7 +1810,7 @@ class writeexcel_worksheet extends writeexcel_biffwriter
         # parameters accordingly.
         # Split the dir name and sheet name (if it exists)
         #
-        list($dir_long, $sheet) = preg_split('\#', $url);
+        list($dir_long, $sheet) = preg_split('[\#]', $url);
         $link_type              = 0x0103; # Always absolute
         //!!!
         if (isset($sheet)) {

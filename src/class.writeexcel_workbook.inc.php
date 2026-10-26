@@ -61,7 +61,7 @@ class writeexcel_workbook extends writeexcel_biffwriter
      * 	temp_prefix (string) Prefix to pass to tempnam(), default = 'xls_'.
      * </pre>
      *
-     * @param array $options (for backwards compatibility, you may still pass a string filename here instead of an array)
+    * @param array|string|null $options An options array, a filename string for backwards compatibility, or null.
      */
     public function __construct($options = null)
     {
@@ -744,7 +744,7 @@ class writeexcel_workbook extends writeexcel_biffwriter
         # The default font index is 0
         #
         $format = $this->_tmp_format;
-        $xf;
+        $xf = '';
 
         for ($c = 0; $c < 15; ++$c) {
             $xf = $format->get_xf('style'); # Style XF

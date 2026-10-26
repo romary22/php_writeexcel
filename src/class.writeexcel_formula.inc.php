@@ -23,13 +23,13 @@
  * This file contains source from the PEAR::Spreadsheet class Parser.php file version 0.4 .
  * The raiseError was replaced by triggerError function.
  * The PEAR::isError was imported to keep compatibility to PEAR::Spreadsheet class.
- * 
+ *
  * Imported and adapted by Andreas Brodowski 2003 (andreas.brodowski@oscar-gmbh.com).
- * 
+ *
  * There should be no license rights in question because the Parser.php from PEAR class is 
  * published under GNU License the same way like this class.
- * 
- * Changes:	03/08/27 Added SPREADSHEET_EXCEL_WRITER_SCOLON for arg seperation in excel functions
+ *
+ * Changes: 03/08/27 Added SPREADSHEET_EXCEL_WRITER_SCOLON for arg seperation in excel functions
  */
 
 /**
@@ -46,31 +46,53 @@
  * This is the Spreadsheet::WriteExcel Perl package ported to PHP
  * Spreadsheet::WriteExcel was written by John McNamara, jmcnamara@cpan.org.
  */
-call_user_func(function () {
-    $defines = array(
-        'SPREADSHEET_EXCEL_WRITER_ADD'    => '+', // @const SPREADSHEET_EXCEL_WRITER_ADD token identifier for character "+"
-        'SPREADSHEET_EXCEL_WRITER_SUB'    => '-', // @const SPREADSHEET_EXCEL_WRITER_SUB token identifier for character "-"
-        'SPREADSHEET_EXCEL_WRITER_MUL'    => '*', // @const SPREADSHEET_EXCEL_WRITER_MUL token identifier for character "*"
-        'SPREADSHEET_EXCEL_WRITER_DIV'    => '/', // @const SPREADSHEET_EXCEL_WRITER_DIV token identifier for character "/"
-        'SPREADSHEET_EXCEL_WRITER_OPEN'   => '(', // @const SPREADSHEET_EXCEL_WRITER_OPEN token identifier for character "("
-        'SPREADSHEET_EXCEL_WRITER_CLOSE'  => ')', // @const SPREADSHEET_EXCEL_WRITER_CLOSE token identifier for character ")"
-        'SPREADSHEET_EXCEL_WRITER_COMA'   => ',', // @const SPREADSHEET_EXCEL_WRITER_COMA token identifier for character " => '
-        'SPREADSHEET_EXCEL_WRITER_SCOLON' => ';', // @const SPREADSHEET_EXCEL_WRITER_SCOLON token identifier for character ";"
-        'SPREADSHEET_EXCEL_WRITER_GT'     => '>', // @const SPREADSHEET_EXCEL_WRITER_GT token identifier for character ">"
-        'SPREADSHEET_EXCEL_WRITER_LT'     => '<', // @const SPREADSHEET_EXCEL_WRITER_LT token identifier for character "<"
-        'SPREADSHEET_EXCEL_WRITER_LE'     => '<=', // @const SPREADSHEET_EXCEL_WRITER_LE token identifier for character "<="
-        'SPREADSHEET_EXCEL_WRITER_GE'     => '>=', // @const SPREADSHEET_EXCEL_WRITER_GE token identifier for character ">="
-        'SPREADSHEET_EXCEL_WRITER_EQ'     => '=', // @const SPREADSHEET_EXCEL_WRITER_EQ token identifier for character "="
-        'SPREADSHEET_EXCEL_WRITER_NE'     => '<>', // @const SPREADSHEET_EXCEL_WRITER_NE token identifier for character "<>"
-    );
-    foreach ($defines as $k => $v) {
-        if (defined($k) && (constant($k) === $v)) {
-            // ignore, probable harmless conflict with loaded PEAR Spreadsheet_Excel_Writer		
-        } else {
-            define($k, $v);
-        }
-    }
-});
+if (!defined('SPREADSHEET_EXCEL_WRITER_ADD')) {
+    define('SPREADSHEET_EXCEL_WRITER_ADD', '+');
+}
+if (!defined('SPREADSHEET_EXCEL_WRITER_SUB')) {
+    define('SPREADSHEET_EXCEL_WRITER_SUB', '-');
+}
+if (!defined('SPREADSHEET_EXCEL_WRITER_MUL')) {
+    define('SPREADSHEET_EXCEL_WRITER_MUL', '*');
+}
+if (!defined('SPREADSHEET_EXCEL_WRITER_DIV')) {
+    define('SPREADSHEET_EXCEL_WRITER_DIV', '/');
+}
+if (!defined('SPREADSHEET_EXCEL_WRITER_OPEN')) {
+    define('SPREADSHEET_EXCEL_WRITER_OPEN', '(');
+}
+if (!defined('SPREADSHEET_EXCEL_WRITER_CLOSE')) {
+    define('SPREADSHEET_EXCEL_WRITER_CLOSE', ')');
+}
+if (!defined('SPREADSHEET_EXCEL_WRITER_COMA')) {
+    define('SPREADSHEET_EXCEL_WRITER_COMA', ',');
+}
+if (!defined('SPREADSHEET_EXCEL_WRITER_SCOLON')) {
+    define('SPREADSHEET_EXCEL_WRITER_SCOLON', ';');
+}
+if (!defined('SPREADSHEET_EXCEL_WRITER_GT')) {
+    define('SPREADSHEET_EXCEL_WRITER_GT', '>');
+}
+if (!defined('SPREADSHEET_EXCEL_WRITER_LT')) {
+    define('SPREADSHEET_EXCEL_WRITER_LT', '<');
+}
+if (!defined('SPREADSHEET_EXCEL_WRITER_LE')) {
+    define('SPREADSHEET_EXCEL_WRITER_LE', '<=');
+}
+if (!defined('SPREADSHEET_EXCEL_WRITER_GE')) {
+    define('SPREADSHEET_EXCEL_WRITER_GE', '>=');
+}
+if (!defined('SPREADSHEET_EXCEL_WRITER_EQ')) {
+    define('SPREADSHEET_EXCEL_WRITER_EQ', '=');
+}
+if (!defined('SPREADSHEET_EXCEL_WRITER_NE')) {
+    define('SPREADSHEET_EXCEL_WRITER_NE', '<>');
+}
+
+define('COL_MAX_OLD', 256);
+define('ROW_MAX_OLD', 65536);
+define('COL_MAX_NEW', 16384);
+define('ROW_MAX_NEW', 1048576);
 
 /**
  * Class for parsing Excel formulas.
@@ -93,6 +115,7 @@ class writeexcel_formula
     protected $_workbook;
     protected $_ext_sheets;
     protected $_formula;
+    protected $_parse_tree;
 
     /**
      * new().
@@ -157,11 +180,10 @@ class writeexcel_formula
         }
 
         # Build the parse tree for the formula
-
         $this->_formula      = $formula;
         $this->_current_char = 0;
-        $this->_lookahead    = $this->_formula{1};
-        $this->_advance($formula);
+        $this->_lookahead    = $this->_formula[1];
+        $this->_advance();
         $parsetree = $this->_condition();
 
         $str = $this->toReversePolish($parsetree);
@@ -179,7 +201,7 @@ class writeexcel_formula
     /**
      * Initialize the ptg and function hashes. 
      */
-    public function _initializeHashes()
+    private function _initializeHashes()
     {
         // The Excel ptg indices
         $this->ptg = array(
@@ -228,12 +250,12 @@ class writeexcel_formula
             'ptgRefN'      => 0x2C,
             'ptgAreaN'     => 0x2D,
             'ptgMemAreaN'  => 0x2E,
-            'ptgMemNoMemN' => 0x2F,
+#            'ptgMemNoMemN' => 0x2F,
             'ptgNameX'     => 0x39,
             'ptgRef3d'     => 0x3A,
             'ptgArea3d'    => 0x3B,
             'ptgRefErr3d'  => 0x3C,
-            'ptgAreaErr3d' => 0x3D,
+#            'ptgAreaErr3d' => 0x3D,
             'ptgArrayV'    => 0x40,
             'ptgFuncV'     => 0x41,
             'ptgFuncVarV'  => 0x42,
@@ -249,16 +271,18 @@ class writeexcel_formula
             'ptgRefNV'     => 0x4C,
             'ptgAreaNV'    => 0x4D,
             'ptgMemAreaNV' => 0x4E,
-            'ptgMemNoMemN' => 0x4F,
+#            'ptgMemNoMemN' => 0x4F,
             'ptgFuncCEV'   => 0x58,
             'ptgNameXV'    => 0x59,
             'ptgRef3dV'    => 0x5A,
-            'ptgArea3dV'   => 0x5B, 'ptgRefErr3dV' => 0x5C,
-            'ptgAreaErr3d' => 0x5D,
+            'ptgArea3dV'   => 0x5B,
+            'ptgRefErr3dV' => 0x5C,
+#            'ptgAreaErr3d' => 0x5D,
             'ptgArrayA'    => 0x60,
             'ptgFuncA'     => 0x61,
             'ptgFuncVarA'  => 0x62,
-            'ptgNameA'     => 0x63, 'ptgRefA' => 0x64,
+            'ptgNameA'     => 0x63,
+            'ptgRefA'      => 0x64,
             'ptgAreaA'     => 0x65,
             'ptgMemAreaA'  => 0x66,
             'ptgMemErrA'   => 0x67,
@@ -286,13 +310,13 @@ class writeexcel_formula
         // The array elements are as follow:
         // ptg:   The Excel function ptg code.
         // args:  The number of arguments that the function takes:
-        //		   >=0 is a fixed number of arguments.
-        //		   -1  is a variable  number of arguments.
+        //           >=0 is a fixed number of arguments.
+        //           -1  is a variable  number of arguments.
         // class: The reference, value or array class of the function args.
         // vol:   The function is volatile.
         //
         $this->_functions = array(
-            // function				  ptg  args  class  vol
+        // function                 ptg  args  class  vol
             'COUNT'        => array(0,   -1,    0,    0),
             'IF'           => array(1,   -1,    1,    0),
             'ISNA'         => array(2,    1,    1,    0),
@@ -525,11 +549,10 @@ class writeexcel_formula
      * Convert a token to the proper ptg value.
      *
      * @param mixed $token The token to convert.
-     *
      * @return mixed the converted token on success. PEAR_Error if the token
      *               is not recognized
      */
-    public function _convert($token)
+    private function _convert($token)
     {
         if (preg_match('/^"[^"]{0,255}"$/', $token)) {
             return $this->_convertString($token);
@@ -561,14 +584,12 @@ class writeexcel_formula
             return $this->_convertRange3d($token);
         } elseif (isset($this->ptg[$token])) {
             // operators (including parentheses)
-
             return pack('C', $this->ptg[$token]);
         }
         // commented so argument number can be processed correctly. See toReversePolish().
-        /* elseif (preg_match("/[A-Z0-9\xc0-\xdc\.]+/",$token))
-          {
-          return($this->_convertFunction($token,$this->_func_args));
-          } */
+        /* elseif (preg_match("/[A-Z0-9\xc0-\xdc\.]+/",$token)) {
+            return($this->_convertFunction($token,$this->_func_args));
+        } */
         // if it's an argument, ignore the token (the argument remains)
         elseif ($token == 'arg') {
             return '';
@@ -582,18 +603,16 @@ class writeexcel_formula
      *
      * @param mixed $num an integer or double for conversion to its ptg value
      */
-    public function _convertNumber($num)
+    private function _convertNumber($num)
     {
 
         // Integer in the range 0..2**16-1
-
         if ((preg_match("/^\d+$/", $num)) and ($num <= 65535)) {
             return pack('Cv', $this->ptg['ptgInt'], $num);
         } else { // A float
             if ($this->_byte_order) { // if it's Big Endian
                 $num = strrev($num);
             }
-
             return pack('Cd', $this->ptg['ptgNum'], $num);
         }
     }
@@ -603,11 +622,10 @@ class writeexcel_formula
      *
      * @param string $string A string for conversion to its ptg value
      */
-    public function _convertString($string)
+    private function _convertString($string)
     {
         // chop away beggining and ending quotes
         $string = substr($string, 1, strlen($string) - 2);
-
         return pack('CC', $this->ptg['ptgStr'], strlen($string)).$string;
     }
 
@@ -617,10 +635,9 @@ class writeexcel_formula
      *
      * @param string $token    The name of the function for convertion to ptg value.
      * @param int    $num_args The number of arguments the function receives.
-     *
      * @return string The packed ptg for the function
      */
-    public function _convertFunction($token, $num_args)
+    private function _convertFunction($token, $num_args)
     {
         $args     = $this->_functions[$token][1];
         $volatile = $this->_functions[$token][3];
@@ -630,7 +647,7 @@ class writeexcel_formula
             return pack('Cv', $this->ptg['ptgFuncV'], $this->_functions[$token][0]);
         }
         // Variable number of args eg. SUM($i,$j,$k, ..).
-        if ($args == -1) {
+        else {
             return pack('CCv', $this->ptg['ptgFuncVarV'], $num_args, $this->_functions[$token][0]);
         }
     }
@@ -640,7 +657,7 @@ class writeexcel_formula
      *
      * @param string $range An Excel range in the A1:A2 or A1..A2 format.
      */
-    public function _convertRange2d($range)
+    private function _convertRange2d($range)
     {
         $class = 2; // as far as I know, this is magick.
         // Split the range into 2 cell refs
@@ -676,8 +693,7 @@ class writeexcel_formula
             // TODO: use real error codes
             trigger_error("Unknown class $class", E_USER_ERROR);
         }
-
-        return $ptgArea.$row1.$row2.$col1.$col2;
+        return $ptgArea . $row1 . $row2 . $col1 . $col2;
     }
 
     /**
@@ -686,7 +702,7 @@ class writeexcel_formula
      *
      * @param string $token An Excel range in the Sheet1!A1:A2 format.
      */
-    public function _convertRange3d($token)
+    private function _convertRange3d($token)
     {
         $class = 2; // as far as I know, this is magick.
         // Split the ref at the ! symbol
@@ -708,7 +724,7 @@ class writeexcel_formula
                 return $cell_array1;
             }
             list($row1, $col1) = $cell_array1;
-            $cell_array2       = $this->_cellToPackedRowcol($cell2);
+            $cell_array2 = $this->_cellToPackedRowcol($cell2);
             if ($this->isError($cell_array2)) {
                 return $cell_array2;
             }
@@ -732,17 +748,16 @@ class writeexcel_formula
             trigger_error("Unknown class $class", E_USER_ERROR);
         }
 
-        return $ptgArea.$ext_ref.$row1.$row2.$col1.$col2;
+        return $ptgArea . $ext_ref . $row1 . $row2 . $col1 . $col2;
     }
 
     /**
      * Convert an Excel reference such as A1, $B2, C$3 or $D$4 to a ptgRefV.
      *
      * @param string $cell An Excel cell reference
-     *
      * @return string The cell in packed() format with the corresponding ptg
      */
-    public function _convertRef2d($cell)
+    private function _convertRef2d($cell)
     {
         $class = 2; // as far as I know, this is magick.
         // Convert the cell reference
@@ -763,7 +778,6 @@ class writeexcel_formula
             // TODO: use real error codes
             trigger_error("Unknown class $class", E_USER_ERROR);
         }
-
         return $ptgRef.$row.$col;
     }
 
@@ -772,10 +786,9 @@ class writeexcel_formula
      * ptgRef3dV.
      *
      * @param string $cell An Excel cell reference
-     *
      * @return string The cell in packed() format with the corresponding ptg
      */
-    public function _convertRef3d($cell)
+    private function _convertRef3d($cell)
     {
         $class = 2; // as far as I know, this is magick.
         // Split the ref at the ! symbol
@@ -801,7 +814,7 @@ class writeexcel_formula
             trigger_error("Unknown class $class", E_USER_ERROR);
         }
 
-        return $ptgRef.$ext_ref.$row.$col;
+        return $ptgRef . $ext_ref . $row . $col;
     }
 
     /**
@@ -809,10 +822,9 @@ class writeexcel_formula
      * "Sheet1:Sheet2", to a packed structure.
      *
      * @param string $ext_ref The name of the external reference
-     *
      * @return string The reference index in packed() format
      */
-    public function _packExtRef($ext_ref)
+    private function _packExtRef($ext_ref)
     {
         $ext_ref = preg_replace("/^'/", '', $ext_ref); // Remove leading  ' if any.
         $ext_ref = preg_replace("/'$/", '', $ext_ref); // Remove trailing ' if any.
@@ -854,7 +866,7 @@ class writeexcel_formula
      *
      * @return int
      */
-    public function _getSheetIndex($sheet_name)
+    private function _getSheetIndex($sheet_name)
     {
         if (!isset($this->_ext_sheets[$sheet_name])) {
             return -1;
@@ -879,18 +891,17 @@ class writeexcel_formula
      * pack() row and column into the required 3 byte format.
      *
      * @param string $cell The Excel cell reference to be packed
-     *
      * @return array Array containing the row and column in packed() format
      */
-    public function _cellToPackedRowcol($cell)
+    private function _cellToPackedRowcol($cell)
     {
-        $cell                                = strtoupper($cell);
+        $cell = strtoupper($cell);
         list($row, $col, $row_rel, $col_rel) = $this->_cellToRowcol($cell);
-        if ($col >= 256) {
-            trigger_error("Column in: $cell greater than 255", E_USER_ERROR);
+        if ($col >= constant('COL_MAX_OLD')) {
+            trigger_error("Column in: $cell greater than " . constant('COL_MAX_OLD'), E_USER_ERROR);
         }
-        if ($row >= 16384) {
-            trigger_error("Row in: $cell greater than 16384 ", E_USER_ERROR);
+        if ($row >= constant('ROW_MAX_OLD')) {
+            trigger_error("Row in: $cell greater than " . constant('ROW_MAX_OLD'), E_USER_ERROR);
         }
 
         // Set the high bits to indicate if row or col are relative.
@@ -905,13 +916,12 @@ class writeexcel_formula
 
     /**
      * pack() row range into the required 3 byte format.
-     * Just using maximun col/rows, which is probably not the correct solution.
+     * Just using maximun col/rows, which is probably not the correct solution
      *
      * @param string $range The Excel range to be packed
-     *
      * @return array Array containing (row1,col1,row2,col2) in packed() format
      */
-    public function _rangeToPackedRange($range)
+    private function _rangeToPackedRange($range)
     {
         preg_match('/(\$)?(\d+)\:(\$)?(\d+)/', $range, $match);
         // return absolute rows if there is a $ in the ref
@@ -922,12 +932,12 @@ class writeexcel_formula
         // Convert 1-index to zero-index
         --$row1;
         --$row2;
-        // Trick poor inocent Excel
+        // Trick poor innocent Excel
         $col1 = 0;
-        $col2 = 16383; // maximum possible value for Excel 5 (change this!!!)
+        $col2 = constant('COL_MAX_NEW') - 1; // maximum possible value for Excel 5
         //list($row, $col, $row_rel, $col_rel) = $this->_cellToRowcol($cell);
-        if (($row1 >= 16384) or ($row2 >= 16384)) {
-            trigger_error("Row in: $range greater than 16384 ", E_USER_ERROR);
+        if (($row1 >= constant('ROW_MAX_NEW')) or ($row2 >= constant('ROW_MAX_NEW'))) {
+            trigger_error("Row in: $range greater than " . constant('ROW_MAX_NEW'), E_USER_ERROR);
         }
 
         // Set the high bits to indicate if rows are relative.
@@ -948,7 +958,6 @@ class writeexcel_formula
      * whether the row or column are relative references.
      *
      * @param string $cell The Excel cell reference in A1 format.
-     *
      * @return array
      */
     public function _cellToRowcol($cell)
@@ -964,7 +973,7 @@ class writeexcel_formula
         $expn = strlen($col_ref) - 1;
         $col  = 0;
         for ($i = 0; $i < strlen($col_ref); ++$i) {
-            $col += (ord($col_ref{$i}) - ord('A') + 1) * pow(26, $expn);
+            $col += (ord($col_ref[$i]) - ord('A') + 1) * pow(26, $expn);
             --$expn;
         }
 
@@ -978,37 +987,33 @@ class writeexcel_formula
     /**
      * Advance to the next valid token.
      */
-    public function _advance()
+    private function _advance()
     {
         $i = $this->_current_char;
         // eat up white spaces
         if ($i < strlen($this->_formula)) {
-            while ($this->_formula{$i} == ' ') {
+            while ($this->_formula[$i] == ' ') {
                 ++$i;
             }
             if ($i < strlen($this->_formula) - 1) {
-                $this->_lookahead = $this->_formula{$i + 1};
+                $this->_lookahead = $this->_formula[$i + 1];
             }
             $token = '';
         }
         while ($i < strlen($this->_formula)) {
-            $token .= $this->_formula{$i};
+            $token .= $this->_formula[$i];
             if ($i < strlen($this->_formula) - 1) {
-                $this->_lookahead = $this->_formula{$i + 1};
+                $this->_lookahead = $this->_formula[$i + 1];
             } else {
                 $this->_lookahead = '';
             }
             if ($this->_match($token) != '') {
-                //if ($i < strlen($this->_formula) - 1) {
-                //	$this->_lookahead = $this->_formula{$i+1};
-                //}
                 $this->_current_char  = $i + 1;
                 $this->_current_token = $token;
-
                 return 1;
             }
             if ($i < strlen($this->_formula) - 2) {
-                $this->_lookahead = $this->_formula{$i + 2};
+                $this->_lookahead = $this->_formula[$i + 2];
             } else {
                 // if we run out of characters _lookahead becomes empty
                 $this->_lookahead = '';
@@ -1022,7 +1027,6 @@ class writeexcel_formula
      * Checks if it's a valid token.
      *
      * @param mixed $token The token to check.
-     *
      * @return mixed The checked token or false on failure
      */
     public function _match($token)
@@ -1056,7 +1060,6 @@ class writeexcel_formula
                 if ($this->_lookahead == '=') { // it's a GE token
                     break;
                 }
-
                 return $token;
                 break;
             case SPREADSHEET_EXCEL_WRITER_LT:
@@ -1064,7 +1067,6 @@ class writeexcel_formula
                 if (($this->_lookahead == '=') or ($this->_lookahead == '>')) {
                     break;
                 }
-
                 return $token;
                 break;
             case SPREADSHEET_EXCEL_WRITER_GE:
@@ -1116,7 +1118,6 @@ class writeexcel_formula
                 elseif (preg_match('/^[A-Z0-9\xc0-\xdc\.]+$/i', $token) and ($this->_lookahead == '(')) {
                     return $token;
                 }
-
                 return '';
         }
     }
@@ -1130,7 +1131,7 @@ class writeexcel_formula
     {
         $this->_current_char = 0;
         $this->_formula      = $formula;
-        $this->_lookahead    = $formula{1};
+        $this->_lookahead    = $formula[1];
         $this->_advance();
         $this->_parse_tree = $this->_condition();
         if ($this->isError($this->_parse_tree)) {
@@ -1140,7 +1141,7 @@ class writeexcel_formula
 
     /**
      * It parses a condition. It assumes the following rule:
-     * Cond -> Expr [(">" | "<") Expr].
+     * Cond -> Expr [(">" | "<") Expr]
      *
      * @return mixed The parsed ptg'd tree
      */
@@ -1199,7 +1200,7 @@ class writeexcel_formula
 
     /**
      * It parses a expression. It assumes the following rule:
-     * Expr -> Term [("+" | "-") Term].
+     * Expr -> Term [("+" | "-") Term]
      *
      * @return mixed The parsed ptg'd tree
      */
@@ -1254,7 +1255,7 @@ class writeexcel_formula
 
     /**
      * It parses a term. It assumes the following rule:
-     * Term -> Fact [("*" | "/") Fact].
+     * Term -> Fact [("*" | "/") Fact]
      *
      * @return mixed The parsed ptg'd tree
      */
@@ -1288,10 +1289,10 @@ class writeexcel_formula
     /**
      * It parses a factor. It assumes the following rule:
      * Fact -> ( Expr )
-     * 	   | CellRef
-     * 	   | CellRange
-     * 	   | Number
-     * 	   | Function.
+     *       | CellRef
+     *       | CellRange
+     *       | Number
+     *       | Function
      *
      * @return mixed The parsed ptg'd tree
      */
@@ -1354,7 +1355,7 @@ class writeexcel_formula
 
     /**
      * It parses a function call. It assumes the following rule:
-     * Func -> ( Expr [,Expr]* ).
+     * Func -> ( Expr [,Expr]* )
      */
     public function _func()
     {
@@ -1412,8 +1413,8 @@ class writeexcel_formula
     /**
      * Builds a string containing the tree in reverse polish notation (What you 
      * would use in a HP calculator stack).
-     * The following tree:.
-     * 
+     * The following tree:
+     *
      *    +
      *   / \
      *  2   3
@@ -1422,11 +1423,11 @@ class writeexcel_formula
      *
      * The following tree:
      *
-     *	    +
+     *    +
+     *   / \
+     *  3   *
      *     / \
-     *    3   *
-     * 	 / \
-     * 	6   A1
+     *    6   A1
      *
      * produces: "36A1*+"
      *

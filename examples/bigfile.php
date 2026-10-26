@@ -6,7 +6,7 @@ require_once('../class.writeexcel_workbookbig.inc.php');
 require_once('../class.writeexcel_worksheet.inc.php');
 
 $fname = tempnam(sys_get_temp_dir(), "bigfile.xls");
-$workbook = &new writeexcel_workbookbig($fname);
+$workbook = new writeexcel_workbookbig($fname);
 $worksheet = &$workbook->addworksheet();
 
 $worksheet->set_column(0, 50, 18);

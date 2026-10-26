@@ -26,7 +26,7 @@
 class writeexcel_format
 {
     protected $_xf_index;
-    public $_font_index;
+    protected $_font_index;
     protected $_font;
     protected $_size;
     protected $_bold;
@@ -39,7 +39,7 @@ class writeexcel_format
     protected $_font_script;
     protected $_font_family;
     protected $_font_charset;
-    public $_num_format;
+    protected $_num_format;
     protected $_hidden;
     protected $_locked;
     protected $_text_h_align;
@@ -60,7 +60,7 @@ class writeexcel_format
     protected $_right_color;
 
     /**
-     * Constructor.
+     * Constructor
      */
     public function __construct()
     {
@@ -82,31 +82,31 @@ class writeexcel_format
         $this->_font_family    = 0;
         $this->_font_charset   = 0;
 
-        $this->_num_format = 0;
+        $this->_num_format     = 0;
 
-        $this->_hidden = 0;
-        $this->_locked = 1;
+        $this->_hidden         = 0;
+        $this->_locked         = 1;
 
-        $this->_text_h_align  = 0;
-        $this->_text_wrap     = 0;
-        $this->_text_v_align  = 2;
-        $this->_text_justlast = 0;
-        $this->_rotation      = 0;
+        $this->_text_h_align   = 0;
+        $this->_text_wrap      = 0;
+        $this->_text_v_align   = 2;
+        $this->_text_justlast  = 0;
+        $this->_rotation       = 0;
 
-        $this->_fg_color = 0x40;
-        $this->_bg_color = 0x41;
+        $this->_fg_color       = 0x40;
+        $this->_bg_color       = 0x41;
 
-        $this->_pattern = 0;
+        $this->_pattern        = 0;
 
-        $this->_bottom = 0;
-        $this->_top    = 0;
-        $this->_left   = 0;
-        $this->_right  = 0;
+        $this->_bottom         = 0;
+        $this->_top            = 0;
+        $this->_left           = 0;
+        $this->_right          = 0;
 
-        $this->_bottom_color = 0x40;
-        $this->_top_color    = 0x40;
-        $this->_left_color   = 0x40;
-        $this->_right_color  = 0x40;
+        $this->_bottom_color   = 0x40;
+        $this->_top_color      = 0x40;
+        $this->_left_color     = 0x40;
+        $this->_right_color    = 0x40;
 
         // Set properties passed to writeexcel_workbook::addformat()
         if (sizeof($_) > 0) {
@@ -133,14 +133,14 @@ class writeexcel_format
     {
         $_ = func_get_args();
 
-        // $record	Record identifier
-        // $length	Number of bytes to follow
-        // $ifnt	  Index to FONT record
-        // $ifmt	  Index to FORMAT record
-        // $style	 Style and other options
-        // $align	 Alignment
-        // $icv	   fg and bg pattern colors
-        // $fill	  Fill and border line style
+        // $record    Record identifier
+        // $length    Number of bytes to follow
+        // $ifnt      Index to FONT record
+        // $ifmt      Index to FORMAT record
+        // $style     Style and other options
+        // $align     Alignment
+        // $icv       fg and bg pattern colors
+        // $fill      Fill and border line style
         // $border1   Border line style and color
         // $border2   Border color
         // Set the type of the XF record and some of the attributes.
@@ -152,17 +152,17 @@ class writeexcel_format
         }
 
         // Flags to indicate if attributes have been set.
-        $atr_num = ($this->_num_format != 0) ? 1 : 0;
-        $atr_fnt = ($this->_font_index != 0) ? 1 : 0;
-        $atr_alc = $this->_text_wrap ? 1 : 0;
-        $atr_bdr = ($this->_bottom ||
-                $this->_top ||
-                $this->_left ||
-                $this->_right) ? 1 : 0;
-        $atr_pat = ($this->_fg_color != 0x41 ||
-                $this->_bg_color != 0x41 ||
-                $this->_pattern != 0x00) ? 1 : 0;
-        $atr_prot = 0;
+        $atr_num     = ($this->_num_format != 0) ? 1 : 0;
+        $atr_fnt     = ($this->_font_index != 0) ? 1 : 0;
+        $atr_alc     = $this->_text_wrap ? 1 : 0;
+        $atr_bdr     = ($this->_bottom ||
+                        $this->_top ||
+                        $this->_left ||
+                        $this->_right) ? 1 : 0;
+        $atr_pat     = ($this->_fg_color != 0x41 ||
+                        $this->_bg_color != 0x41 ||
+                        $this->_pattern != 0x00) ? 1 : 0;
+        $atr_prot    = 0;
 
         // Reset the default colors for the non-font properties
         if ($this->_fg_color == 0x7FFF) {
@@ -201,21 +201,23 @@ class writeexcel_format
         // The following 2 logical statements take care of special cases in
         // relation to cell colors and patterns:
         // 1. For a solid fill (_pattern == 1) Excel reverses the role of
-        //	foreground and background colors
+        //    foreground and background colors
         // 2. If the user specifies a foreground or background color
-        //	without a pattern they probably wanted a solid fill, so we
-        //	fill in the defaults.
+        //    without a pattern they probably wanted a solid fill, so we
+        //    fill in the defaults.
         if ($this->_pattern <= 0x01 &&
-                $this->_bg_color != 0x41 &&
-                $this->_fg_color == 0x40) {
+            $this->_bg_color != 0x41 &&
+            $this->_fg_color == 0x40) 
+        {
             $this->_fg_color = $this->_bg_color;
             $this->_bg_color = 0x40;
             $this->_pattern  = 1;
         }
 
         if ($this->_pattern <= 0x01 &&
-                $this->_bg_color == 0x41 &&
-                $this->_fg_color != 0x40) {
+            $this->_bg_color == 0x41 &&
+            $this->_fg_color != 0x40)
+        {
             $this->_bg_color = 0x40;
             $this->_pattern  = 1;
         }
@@ -226,7 +228,7 @@ class writeexcel_format
         $ifnt = $this->_font_index;
         $ifmt = $this->_num_format;
 
-        $align = $this->_text_h_align;
+        $align  = $this->_text_h_align;
         $align |= $this->_text_wrap << 3;
         $align |= $this->_text_v_align << 4;
         $align |= $this->_text_justlast << 7;
@@ -238,25 +240,25 @@ class writeexcel_format
         $align |= $atr_pat << 14;
         $align |= $atr_prot << 15;
 
-        $icv = $this->_fg_color;
+        $icv  = $this->_fg_color;
         $icv |= $this->_bg_color << 7;
 
-        $fill = $this->_pattern;
+        $fill  = $this->_pattern;
         $fill |= $this->_bottom << 6;
         $fill |= $this->_bottom_color << 9;
 
-        $border1 = $this->_top;
+        $border1  = $this->_top;
         $border1 |= $this->_left << 3;
         $border1 |= $this->_right << 6;
         $border1 |= $this->_top_color << 9;
 
-        $border2 = $this->_left_color;
+        $border2  = $this->_left_color;
         $border2 |= $this->_right_color << 7;
 
         $header = pack('vv', $record, $length);
         $data   = pack('vvvvvvvv', $ifnt, $ifmt, $style, $align, $icv, $fill, $border1, $border2);
 
-        return $header.$data;
+        return $header . $data;
     }
 
     /**
@@ -265,19 +267,19 @@ class writeexcel_format
     public function get_font()
     {
 
-        // $record	 Record identifier
-        // $length	 Record length
-        // $dyHeight   Height of font (1/20 of a point)
-        // $grbit	  Font attributes
-        // $icv		Index to color palette
-        // $bls		Bold style
-        // $sss		Superscript/subscript
-        // $uls		Underline
-        // $bFamily	Font family
-        // $bCharSet   Character set
-        // $reserved   Reserved
-        // $cch		Length of font name
-        // $rgch	   Font name
+        // $record   Record identifier
+        // $length   Record length
+        // $dyHeight Height of font (1/20 of a point)
+        // $grbit    Font attributes
+        // $icv      Index to color palette
+        // $bls      Bold style
+        // $sss      Superscript/subscript
+        // $uls      Underline
+        // $bFamily  Font family
+        // $bCharSet Character set
+        // $reserved Reserved
+        // $cch      Length of font name
+        // $rgch     Font name
 
         $dyHeight = $this->_size * 20;
         $icv      = $this->_color;
@@ -311,10 +313,10 @@ class writeexcel_format
             $grbit |= 0x20;
         }
 
-        $header = pack('vv', $record, $length);
+        $header = pack('vv',         $record, $length);
         $data   = pack('vvvvvCCCCC', $dyHeight, $grbit, $icv, $bls, $sss, $uls, $bFamily, $bCharSet, $reserved, $cch);
 
-        return $header.$data.$this->_font;
+        return $header . $data . $this->_font;
     }
 
     /**
@@ -329,10 +331,10 @@ class writeexcel_format
         # eg. _color are placed between two binary elements such as _italic
         #
         $key = $this->_font.$this->_size.
-                $this->_font_script.$this->_underline.
-                $this->_font_strikeout.$this->_bold.$this->_font_outline.
-                $this->_font_family.$this->_font_charset.
-                $this->_font_shadow.$this->_color.$this->_italic;
+               $this->_font_script.$this->_underline.
+               $this->_font_strikeout.$this->_bold.$this->_font_outline.
+               $this->_font_family.$this->_font_charset.
+               $this->_font_shadow.$this->_color.$this->_italic;
 
         $key = preg_replace('/ /', '_', $key); # Convert the key to a single word
 
@@ -562,7 +564,7 @@ class writeexcel_format
             $key = preg_replace('/^-/', '', $key);
 
             /* Make sure method names are alphanumeric characters only, in
-              case tainted data is passed to the eval(). */
+               case tainted data is passed to the eval(). */
             if (preg_match('/\W/', $key)) {
                 trigger_error("Unknown property: $key.", E_USER_ERROR);
             }
@@ -575,15 +577,19 @@ class writeexcel_format
             }
 
             /* Evaling all $values as a strings gets around the problem of
-              some numerical format strings being evaluated as numbers, for
-              example "00000" for a zip code. */
-            if (is_int($key)) {
-                $method = 'set_'.$value;
-                $this->$method();
-            } else {
-                $method = 'set_'.$key;
-                $this->$method($value);
+               some numerical format strings being evaluated as numbers, for
+               example "00000" for a zip code. */
+            try {
+                if (is_int($key)) {
+                    eval("\$this->set_$value();");
+                } else {
+                    eval("\$this->set_$key('$value');");
+                }
+            } catch (Throwable $ex) {
+                error_log('ERROR: writeexcel_format::set_properties: '.$ex->getMessage());
+                return false;
             }
+
         }
     }
 

@@ -6,7 +6,7 @@ require_once('../class.writeexcel_workbook.inc.php');
 require_once('../class.writeexcel_worksheet.inc.php');
 
 $fname = tempnam(sys_get_temp_dir(), "simple.xls");
-$workbook = &new writeexcel_workbook($fname);
+$workbook = new writeexcel_workbook($fname);
 $worksheet = &$workbook->addworksheet();
 
 # The general syntax is write($row, $column, $token). Note that row and
