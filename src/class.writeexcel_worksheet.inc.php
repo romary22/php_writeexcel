@@ -809,7 +809,7 @@ class writeexcel_worksheet extends writeexcel_biffwriter
             $_ = $this->_substitute_cellref($_);
         }
 
-        $token = $_[2];
+        $token = $_[2] ?? '';
 
         # Match an array ref.
         if (is_array($token)) {
@@ -1225,6 +1225,9 @@ class writeexcel_worksheet extends writeexcel_biffwriter
         # Check the number of args
         if (sizeof($_) < 3) {
             return -1;
+        }
+        if (is_null($_[2])) {
+            $_[2] = '';
         }
 
         $record = 0x0204;                        # Record identifier
